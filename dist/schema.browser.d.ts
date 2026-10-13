@@ -15,4 +15,5 @@ export * from 'zod/v4';
  * only TAGS or READS schema metadata keeps working in the browser.
  */
 export declare const COLUMN_ZOD_SCHEMA: unique symbol;
+export * from './ids.js';
 //# sourceMappingURL=schema.browser.d.ts.map

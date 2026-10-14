@@ -1,6 +1,6 @@
 # @arki/contracts
 
-Published version: **0.0.5**
+Published version: **0.1.0**
 
 This repository is a **read-only mirror** of the [@arki/contracts](https://www.npmjs.com/package/@arki/contracts) npm package.
 

@@ -1,0 +1,131 @@
+import { defineFailure } from '@arki/failure';
+/**
+ * Static definition misuse raises {@link ContractsError} with a stable code.
+ * Cursor and ID generation operations return canonical failures. Match on code. A `ContractsError` is a
+ * `TypeError`, so `instanceof TypeError` checks written before the codes still hold.
+ */
+/** Stable error codes of `@arki/contracts`. */
+export const CONTRACTS_ERROR_CODES = {
+    /**
+     * `defineId` got a non-string prefix.
+     *
+     * @fix Supply the exact stored prefix as a string; use `''` for unprefixed IDs.
+     * @verify bun run test -- src/ids.test.ts
+     */
+    invalidIdPrefix: 'ARKI_CONTRACTS_E001',
+    /**
+     * `assertUniqueIdPrefixes` found two prefixes that are equal or start one another.
+     *
+     * @fix Give each id kind a prefix that does not start another one.
+     * @verify bun run test -- src/ids.test.ts
+     */
+    overlappingIdPrefixes: 'ARKI_CONTRACTS_E002',
+    /**
+     * Reserved legacy exception code; ID generation now returns RandomSourceUnavailable.
+     *
+     * @fix Provide Web Crypto getRandomValues; application-owned secure providers must fail closed in every supported mode.
+     * @verify bun run test:runtimes
+     */
+    noRandomSource: 'ARKI_CONTRACTS_E003',
+    /**
+     * `keyset` got no keys.
+     *
+     * @fix Declare at least one key. Order by NOT NULL columns and end on a unique one.
+     * @verify bun run test -- src/pagination.test.ts
+     */
+    invalidKeyset: 'ARKI_CONTRACTS_E004',
+    /**
+     * Reserved legacy exception code; cursor decoding now returns InvalidCursor.
+     *
+     * @fix Send back a cursor exactly as the same keyset returned it, or start from the first page.
+     * @verify bun run test -- src/pagination.test.ts
+     */
+    invalidCursor: 'ARKI_CONTRACTS_E005',
+    /**
+     * A contract key contains `.` or uses a reserved name.
+     *
+     * @fix Rename the contract key: no `.`, and not a name the query utils reserve.
+     * @verify bun run test -- src/orpc.test.ts
+     */
+    invalidContractKey: 'ARKI_CONTRACTS_E006',
+    /**
+     * `operationOf` got a value that carries no operation.
+     *
+     * @fix Pass a leaf of `createOrpcUtils`, or an object built by `operations()`.
+     * @verify bun run test -- src/orpc.test.ts
+     */
+    notAnOperation: 'ARKI_CONTRACTS_E007',
+    /**
+     * The Drizzle column builder has no runtime config for its schema metadata.
+     *
+     * @fix Use a supported Drizzle column builder and matching Drizzle version.
+     * @verify bun run test -- src/drizzle.test.ts
+     */
+    invalidColumnMetadata: 'ARKI_CONTRACTS_E008',
+    /**
+     * `defineId` received a missing, empty or non-string domain kind.
+     *
+     * @fix Supply a non-empty literal domain name, such as `billing.refund`.
+     * @verify bun run test -- src/ids.test.ts
+     */
+    invalidIdKind: 'ARKI_CONTRACTS_E009',
+    /**
+     * `defineId` received an unsupported generation format.
+     *
+     * @fix Use 'uuid', omit format, or supply 2–256 distinct non-surrogate UTF-16 alphabet characters and an integer length of 1–256.
+     * @verify bun run test -- src/ids.test.ts
+     */
+    invalidIdFormat: 'ARKI_CONTRACTS_E010',
+};
+const REMEDIATIONS = {
+    ARKI_CONTRACTS_E001: 'Supply the stored prefix as a string; use an empty string for unprefixed IDs.',
+    ARKI_CONTRACTS_E002: 'Give each id kind a prefix that is not the start of another one.',
+    ARKI_CONTRACTS_E003: 'Provide Web Crypto getRandomValues; application-owned secure providers must fail closed in every supported mode.',
+    ARKI_CONTRACTS_E004: 'Declare at least one key, and order by NOT NULL columns that end on a unique one.',
+    ARKI_CONTRACTS_E005: 'Pass back a cursor exactly as the same keyset returned it, or start from the first page.',
+    ARKI_CONTRACTS_E006: 'Rename the contract key: no ".", and not a name the query utils reserve.',
+    ARKI_CONTRACTS_E008: 'Use a supported Drizzle column builder and matching Drizzle version.',
+    ARKI_CONTRACTS_E007: 'Pass a leaf of createOrpcUtils, or an object built by operations().',
+    ARKI_CONTRACTS_E009: 'Supply a non-empty literal domain name, such as billing.refund.',
+    ARKI_CONTRACTS_E010: "Use format: 'uuid', omit format, or supply { alphabet, length } with 2–256 distinct non-surrogate UTF-16 characters and an integer length of 1–256.",
+};
+/** A coded failure of an `@arki/contracts` function. */
+export class ContractsError extends TypeError {
+    code;
+    /** What to do about it, in one sentence. */
+    remediation;
+    constructor(code, message, options) {
+        super(`${code}: ${message}`, options);
+        this.name = 'ContractsError';
+        this.code = code;
+        this.remediation = REMEDIATIONS[code];
+    }
+}
+/** A cursor cannot be decoded for this keyset.
+ * @fix Send back the cursor unchanged, or start from the first page.
+ * @verify bun run test -- src/pagination.test.ts
+ */
+export const InvalidCursor = defineFailure('contracts.invalid_cursor', {
+    status: 400,
+    message: 'The cursor is not valid for this list.',
+    remediation: 'Send back the cursor unchanged, or start from the first page.',
+});
+/** A row has a missing or unrepresentable cursor key.
+ * @fix Use non-null strings, finite numbers, booleans or valid Dates and keep the cursor within 1024 characters.
+ * @verify bun run test -- src/pagination.test.ts
+ */
+export const InvalidCursorValue = defineFailure('contracts.invalid_cursor_value', {
+    status: 500,
+    message: 'The row cannot be represented by a cursor.',
+    remediation: 'Use non-null strings, finite numbers, booleans or valid Dates and a cursor of at most 1024 characters.',
+});
+/** Secure ID generation has no usable Web Crypto provider.
+ * @fix Provide Web Crypto getRandomValues, or randomUUID for UUID declarations; application-owned secure providers must fail closed in every supported mode.
+ * @verify bun run test -- src/ids.test.ts
+ */
+export const RandomSourceUnavailable = defineFailure('contracts.random_source_unavailable', {
+    status: 500,
+    message: 'Secure random generation is unavailable.',
+    remediation: 'Provide Web Crypto getRandomValues, or randomUUID for UUID declarations; application-owned secure providers must fail closed in every supported mode.',
+});
+//# sourceMappingURL=errors.js.map

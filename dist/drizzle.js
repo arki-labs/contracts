@@ -1,83 +1,68 @@
 import { getColumns } from 'drizzle-orm';
-import { createInsertSchema as drizzleCreateInsertSchema, createSelectSchema as drizzleCreateSelectSchema, createUpdateSchema as drizzleCreateUpdateSchema, } from 'drizzle-orm/zod';
-export { bufferSchema, createSchemaFactory, jsonSchema, literalSchema, } from 'drizzle-orm/zod';
-/**
- * Symbol used to tag a Drizzle column builder with its runtime validation
- * schema. Producers (like `@arki/db`'s ID factories) write to
- * `builder.config[COLUMN_ZOD_SCHEMA]` at column-construction time; this
- * package's `createSelectSchema`/`createInsertSchema`/`createUpdateSchema`
- * wrappers read it back and merge it into the refine map automatically.
- *
- * Using `Symbol.for(...)` keeps the symbol globally registered so any package
- * resolves to the same value, even with multiple module copies.
- */
+import { jsonb } from 'drizzle-orm/pg-core';
+import { createInsertSchema as drizzleInsert, createSelectSchema as drizzleSelect, createUpdateSchema as drizzleUpdate, } from 'drizzle-orm/zod';
+import { z } from 'zod';
+import { is } from '@arki/schema';
+import { CONTRACTS_ERROR_CODES, ContractsError } from './errors.js';
+import { dimensionsSchema, nativeSchema, objectSchema } from './inspection.js';
+export { bufferSchema, createSchemaFactory, jsonSchema, literalSchema } from 'drizzle-orm/zod';
+/** Runtime-only column metadata shared with ID factories, including duplicate module copies. */
 export const COLUMN_ZOD_SCHEMA = Symbol.for('@arki/contracts/columnZodSchema');
-function readColumnSchema(column) {
-    const cfg = column?.config;
-    const schema = cfg?.[COLUMN_ZOD_SCHEMA];
-    return schema && typeof schema === 'object' && '_zod' in schema
-        ? schema
-        : undefined;
-}
+const jsonValueSchema = z.json();
 /**
- * Walk every column on `table`, look up the optional Zod schema each producer
- * stashed via `COLUMN_ZOD_SCHEMA`, and merge it into the user-provided refine.
- *
- * The schema is registered as a CALLBACK refinement (`(_) => schema`) so that
- * drizzle-zod's `HandleRefinement` correctly wraps `ZodNullable` around it for
- * nullable columns. A bare-schema refinement bypasses the nullability wrap and
- * would refuse `null` at runtime for nullable foreign keys.
- *
- * User-provided refines win over auto-derived ones, so explicit overrides on a
- * specific column always take priority.
+ * Declare a JSONB column from its runtime schema. The application type is the
+ * schema output. Reuse that schema in an explicit refinement for precise
+ * validator input/output inference: `{ profile: () => profileSchema }`.
+ * Output must be recursively JSON-compatible and accepted as schema input.
+ * Parsing stored output must preserve its value; types cannot prove stability.
+ * Use a separate wire codec in refinements. Non-finite JSON output is rejected.
+ * This does not install a database driver codec or run transforms on queries.
  */
+export function jsonColumn(name, schema) {
+    const builder = jsonb(name).$type();
+    const config = Reflect.get(builder, 'config');
+    if (!is(config, objectSchema)) {
+        throw new ContractsError(CONTRACTS_ERROR_CODES.invalidColumnMetadata, 'The Drizzle builder has no column config.');
+    }
+    Object.assign(config, { [COLUMN_ZOD_SCHEMA]: jsonStorageSchema(schema) });
+    return builder;
+}
+/** The schema stamped on a JSON column: the column's schema, refusing output that is not JSON (such as `NaN`). */
+export function jsonStorageSchema(schema) {
+    return schema.refine(value => jsonValueSchema.safeParse(value).success, 'Expected JSON storage output');
+}
+function readColumnSchema(column) {
+    const config = Reflect.get(column, 'config');
+    if (!is(config, objectSchema))
+        return;
+    const schema = Reflect.get(config, COLUMN_ZOD_SCHEMA);
+    return is(schema, nativeSchema) ? schema : undefined;
+}
 function autoRefine(table, userRefine) {
-    const columns = getColumns(table);
-    const refine = { ...(userRefine ?? {}) };
-    for (const [key, column] of Object.entries(columns)) {
+    const refine = { ...userRefine };
+    for (const [key, column] of Object.entries(getColumns(table))) {
         if (key in refine)
             continue;
         const schema = readColumnSchema(column);
         if (schema) {
-            refine[key] = (() => schema);
+            const dimensions = Reflect.get(column, 'dimensions');
+            let storedSchema = schema;
+            if (is(dimensions, dimensionsSchema)) {
+                for (let dimension = 0; dimension < dimensions; dimension += 1)
+                    storedSchema = z.array(storedSchema);
+            }
+            refine[key] = () => storedSchema;
         }
     }
     return refine;
 }
-/**
- * Build a select schema from a Drizzle table that preserves branded ID and
- * `jsonb('col').$type<Shape>()` typings AND auto-applies any runtime validation
- * schema producers stashed on the column via {@link COLUMN_ZOD_SCHEMA}.
- *
- * Runtime behavior matches drizzle-zod's `createSelectSchema` (including any
- * `refine` overrides) PLUS the auto-applied per-column schemas from `@arki/db`
- * ID factories — so `\`plan_\${string}\`` IDs are validated at parse time,
- * not just typed at compile time.
- *
- * The TypeScript output type is widened to the table's `InferSelectModel`
- * shape, so `z.infer<typeof schema>['id']` is `\`plan_\${string}\``, not `string`.
- *
- * @example
- * const planSelectSchema = createSelectSchema(plans);
- * planSelectSchema.parse({ id: 'wrong_prefix_xyz', ... }); // throws
- */
 export function createSelectSchema(table, refine) {
-    return drizzleCreateSelectSchema(table, autoRefine(table, refine));
+    return drizzleSelect(table, autoRefine(table, refine));
 }
-/**
- * Build an insert schema from a Drizzle table that preserves branded ID and
- * `jsonb('col').$type<Shape>()` typings AND auto-applies any runtime validation
- * schema producers stashed on the column via {@link COLUMN_ZOD_SCHEMA}.
- */
 export function createInsertSchema(table, refine) {
-    return drizzleCreateInsertSchema(table, autoRefine(table, refine));
+    return drizzleInsert(table, autoRefine(table, refine));
 }
-/**
- * Build an update schema from a Drizzle table — every column becomes optional
- * but otherwise preserves branded ID and `jsonb('col').$type<Shape>()` typings
- * AND auto-applies producer-stashed schemas.
- */
 export function createUpdateSchema(table, refine) {
-    return drizzleCreateUpdateSchema(table, autoRefine(table, refine));
+    return drizzleUpdate(table, autoRefine(table, refine));
 }
 //# sourceMappingURL=drizzle.js.map

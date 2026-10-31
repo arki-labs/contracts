@@ -1,4 +1,4 @@
-Read-only mirror of `@arki/contracts` v0.4.0. Source and issues: arki-labs/arki. Docs: https://arki.dev/packages/contracts. Published 2026-10-30 with provenance https://www.npmjs.com/package/@arki/contracts/v/0.4.0#provenance.
+Read-only mirror of `@arki/contracts` v0.4.1. Source and issues: arki-labs/arki. Docs: https://arki.dev/packages/contracts. Published 2026-10-31 with provenance https://www.npmjs.com/package/@arki/contracts/v/0.4.1#provenance.
 
 # @arki/contracts
 
@@ -290,6 +290,8 @@ Drizzle entry, `@arki/contracts/drizzle`:
 ## Failure behaviour
 
 Static definition misuse throws `ContractsError`, a `TypeError`. ID generation and cursor codecs return canonical failures; check them with their definitions or `isFailure`. Match on code, never on message.
+
+Zod and `zod-form-data` are re-exported unchanged, so their `.parse()` throws a raw `ZodError` on bad input. For outside values (a request, a stored payload, user text) use `parse` or `safeParse` from `@arki/schema`, which return an `InvalidInput` failure, or Zod's own `.safeParse()`. The Arki functions here (`defineId().is`, the keyset cursor decoder, `operationAt`) never throw on outside values.
 
 ```ts run expect
 import { CONTRACTS_ERROR_CODES, ContractsError, defineId } from '@arki/contracts';

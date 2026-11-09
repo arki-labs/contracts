@@ -1,14 +1,11 @@
 /** Identity-preserving schemas for native contracts, metadata and provider capabilities. */
 import { z } from 'zod';
-import type { AnyOperation } from './orpc.js';
 /** Native records may include arrays or class instances; inspecting never clones them. */
 export declare const objectSchema: z.ZodCustom<object, object>;
 /** Inspect callability without replacing a provider or losing its receiver. */
 export declare const callableSchema: z.ZodCustom<(...args: never[]) => unknown, (...args: never[]) => unknown>;
 /** Native Zod schema metadata retains the original schema and its transformations. */
 export declare const nativeSchema: z.ZodInstanceOf<z.ZodType<unknown, unknown, z.core.$ZodTypeInternals<unknown, unknown>>>;
-/** The public Operation type is the source; its phantom field has no runtime data. */
-export declare const operationSchema: z.ZodCustom<AnyOperation, AnyOperation>;
 /** Definition options and provider results are validated without coercion. */
 export declare const idPrefixSchema: z.ZodString;
 export declare const idKindSchema: z.ZodString;

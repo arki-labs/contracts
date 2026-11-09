@@ -1,7 +1,8 @@
 import { getContractRouter, isContractProcedure } from '@orpc/contract';
 import { is } from '@arki/schema';
 import { CONTRACTS_ERROR_CODES, ContractsError } from './errors.js';
-import { objectSchema, operationSchema } from './inspection.js';
+import { objectSchema } from './inspection.js';
+import { operationSchema } from './operation-schema.js';
 /** Key under which a utils object carries its operation. `~` like oRPC's own `'~orpc'`. */
 export const OPERATION = '~op';
 /**

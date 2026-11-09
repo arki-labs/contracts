@@ -1,4 +1,4 @@
-Read-only mirror of `@arki/contracts` v0.4.1. Source and issues: arki-labs/arki. Docs: https://arki.dev/packages/contracts. Published 2026-10-31 with provenance https://www.npmjs.com/package/@arki/contracts/v/0.4.1#provenance.
+Read-only mirror of `@arki/contracts` v0.4.2. Source and issues: arki-labs/arki. Docs: https://arki.dev/packages/contracts. Published 2026-11-09 with provenance https://www.npmjs.com/package/@arki/contracts/v/0.4.2#provenance.
 
 # @arki/contracts
 
@@ -55,6 +55,16 @@ false
 ## Runtime support
 
 The main entry and `@arki/contracts/orpc` run on Node, Bun, Deno, browsers and React Native (Hermes). `@arki/contracts/drizzle` needs `drizzle-orm`; `@arki/contracts/orpc` needs `@orpc/contract`. Cursors use `btoa`, `atob` and URI coding, not `TextDecoder`, which Hermes lacks. Default ID generation needs `crypto.getRandomValues`; UUID generation prefers `crypto.randomUUID` and otherwise uses secure random bytes. Plain Hermes has neither. Applications on runtimes without Web Crypto must initialize a provider backed by secure platform entropy that fails closed in every supported mode, including debugging. Contracts cannot certify entropy quality from returned bytes. `zod-form-data` loads on every runtime; plain Hermes has no `FormData` class (React Native adds one). `bun run test:runtimes` runs a smoke test of the built package on each runtime; the Hermes leg needs `HERMES_BIN`.
+
+<!-- runtimes:start -->
+| Runtime | Result | Version tested | Date (UTC) |
+| --- | --- | --- | --- |
+| node | pass | v22.13.1 | 2026-11-05 |
+| bun | pass | 1.4.2 | 2026-11-05 |
+| deno | pass | 2.9.8 | 2026-11-05 |
+| browser | pass | Chromium 156.0.8078.4 | 2026-11-05 |
+| hermes | pass | V1 250829098.0.17 | 2026-11-05 |
+<!-- runtimes:end -->
 
 ## Why
 
@@ -325,6 +335,10 @@ Schema `parse` calls throw a `ZodError` as Zod does. Use `safeParse` for input f
 | `ARKI_CONTRACTS_E007` | `operationOf`                   | The value carries no operation.                        |
 
 Cursor codecs return `contracts.invalid_cursor` or `contracts.invalid_cursor_value`, plus canonical `schema.validator_defect` / `failure.unexpected_defect` for unexpected faults. Causes stay private. These pure codecs need no separate OTel span; the calling query or transport owns the operation span.
+
+## Observability
+
+Pure computation: it builds schemas and column definitions and runs no I/O, so no spans or metrics.
 
 ## Limits
 

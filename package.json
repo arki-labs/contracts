@@ -1,6 +1,6 @@
 {
   "name": "@arki/contracts",
-  "version": "0.4.2",
+  "version": "0.4.4",
   "description": "Shared Zod schemas and Drizzle contract helpers — branded ID-aware select/insert/update schemas with auto-applied column refinements.",
   "license": "MIT",
   "repository": {
@@ -56,14 +56,14 @@
     "package.json"
   ],
   "dependencies": {
-    "@arki/failure": "0.4.0",
-    "@arki/schema": "0.3.1",
+    "@arki/failure": "0.4.2",
+    "@arki/schema": "0.3.3",
     "@paralleldrive/cuid2": "^3.3.0",
     "zod": "4.6.5",
     "zod-form-data": "^3.0.3"
   },
   "peerDependencies": {
-    "@orpc/contract": "^1.15.5",
+    "@orpc/contract": "^1.16.5",
     "drizzle-orm": "^1.0.0-rc.4"
   },
   "peerDependenciesMeta": {

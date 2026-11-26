@@ -1,4 +1,4 @@
-Read-only mirror of `@arki/contracts` v0.4.2. Source and issues: arki-labs/arki. Docs: https://arki.dev/packages/contracts. Published 2026-11-09 with provenance https://www.npmjs.com/package/@arki/contracts/v/0.4.2#provenance.
+Read-only mirror of `@arki/contracts` v0.4.4. Source and issues: arki-labs/arki. Docs: https://arki.dev/packages/contracts. Published 2026-11-26 with provenance https://www.npmjs.com/package/@arki/contracts/v/0.4.4#provenance.
 
 # @arki/contracts
 
